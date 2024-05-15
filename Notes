@@ -1,0 +1,69 @@
+---- V1 ---- 
+
+.
+├── Makefile
+├── cmd
+│   └── main.go
+├── db.sqlite3
+├── go.mod
+├── go.sum
+├── pkg
+    ├── books
+    │   ├── add_book.go
+    │   ├── controller.go
+    │   ├── delete_book.go
+    │   ├── get_book.go
+    │   ├── get_books.go
+    │   └── update_book.go
+    └── common
+        ├── config
+        │   └── config.go
+        ├── db
+        │   └── db.go
+        ├── envs
+        └── models
+            ├── base.go
+            └── book.go
+
+
+---- V2 ---- 
+// .env should be outside the project_root
+project_root/
+├── go.mod
+├── go.sum
+└── Makefile (optional)
+└── pkg/
+    ├── api/
+    │   ├── controllers/
+    │   ├── middleware/
+    │   └── routers/
+    ├── config/
+    │   └── config.go
+    ├── db/
+    │   ├── connection.go
+    │   ├── models/
+    │   │   └── user.go
+    │   │   └── order.go
+    │   └── repositories/
+    │       └── user_repository.go
+    │       └── order_repository.go
+    ├── entities/
+    │   └── user.go
+    │   └── order.go
+    ├── errors/
+    │   └── custom_errors.go
+    ├── service/
+    │   ├── user_service.go
+    │   └── order_service.go
+    ├── utils/
+    │   └── helper_functions.go
+    └── ... (other features/domains)
+└── test/ (mirrors pkg structure)
+    ├── api/
+    │   ├── controllers/
+    │   │   └── controllers_test.go
+    │   └── ...
+    └── ... (other features/domains)
+└── vendor/ (optional - downloaded dependencies)
+└── documentation/ (optional)
+└── logging/ (optional)

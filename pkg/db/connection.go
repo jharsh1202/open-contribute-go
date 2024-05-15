@@ -3,7 +3,7 @@ package db
 import (
 	"log"
 
-	"open-contribute/pkg/common/models"
+	"open-contribute/pkg/db/models"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

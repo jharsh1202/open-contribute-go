@@ -1,8 +1,8 @@
 package main
 
 import (
-	"open-contribute/pkg/books"
-	"open-contribute/pkg/common/db"
+	router "open-contribute/pkg/api/routers"
+	"open-contribute/pkg/db"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// SET ENVIRONMENT CONFIG FILE PATH
-	viper.SetConfigFile("./pkg/common/envs/.env")
+	viper.SetConfigFile(".env")
 
 	// READ ENVIRONMENT CONFIG FILE
 	viper.ReadInConfig()
@@ -21,15 +21,15 @@ func main() {
 
 	// creates a new Gin engine with the default middleware attached which includes Logger and Recovery middleware
 	// holds the instance of the Gin engine used to define routes and start the server.
-	router := gin.Default()
+	gin_router := gin.Default()
 
 	// Initialize Database
 	dbHandler := db.Init(dbPath)
 
 	// Register Routes
-	books.RegisterRoutes(router, dbHandler)
+	router.RegisterRoutes(gin_router, dbHandler)
 
-	router.GET("/", func(ctx *gin.Context) {
+	gin_router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
 			"port": port,
 			// "dbUrl": dbUrl,
@@ -37,5 +37,5 @@ func main() {
 		})
 	})
 
-	router.Run(port)
+	gin_router.Run(port)
 }

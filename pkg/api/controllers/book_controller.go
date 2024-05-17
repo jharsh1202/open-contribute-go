@@ -2,16 +2,20 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"open-contribute/pkg/db/models"
+	"open-contribute/pkg/db/repositories"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-// The handler struct serves as a container for holding a GORM database connection
-type BookHandler struct {
-	DB *gorm.DB // pointer to a GORM database connection
+type BookController struct {
+	repo *repositories.BookRepository
+}
+
+func NewBookController(repo *repositories.BookRepository) *BookController {
+	return &BookController{repo: repo}
 }
 
 type AddBookRequestBody struct {
@@ -20,65 +24,72 @@ type AddBookRequestBody struct {
 	Description string `json:"description"`
 }
 
-func (h BookHandler) AddBook(ctx *gin.Context) {
-	body := AddBookRequestBody{}
-
+func (c *BookController) AddBook(ctx *gin.Context) {
+	var body AddBookRequestBody
 	if err := ctx.BindJSON(&body); err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	var book models.Book
+	book := models.Book{
+		Title:       body.Title,
+		Author:      body.Author,
+		Description: body.Description,
+	}
 
-	book.Title = body.Title
-	book.Author = body.Author
-	book.Description = body.Description
-
-	if result := h.DB.Create(&book); result.Error != nil {
-		ctx.AbortWithError(http.StatusNotFound, result.Error)
+	if err := c.repo.CreateBook(&book); err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, &book)
 }
 
-func (h BookHandler) DeleteBook(ctx *gin.Context) {
-	id := ctx.Param("id")
-
-	var book models.Book
-
-	if result := h.DB.First(&book, id); result.Error != nil {
-		ctx.AbortWithError(http.StatusNotFound, result.Error)
+func (c *BookController) DeleteBook(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	h.DB.Delete(&book)
+	book, err := c.repo.GetBookByID(uint(id))
+	if err != nil {
+		ctx.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	if err := c.repo.DeleteBook(book); err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	ctx.Status(http.StatusOK)
 }
 
-func (h BookHandler) GetBook(ctx *gin.Context) {
-	id := ctx.Param("id")
-
-	var book models.Book
-
-	if result := h.DB.First(&book, id); result.Error != nil {
-		ctx.AbortWithError(http.StatusNotFound, result.Error)
+func (c *BookController) GetBook(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &book)
+	book, err := c.repo.GetBookByID(uint(id))
+	if err != nil {
+		ctx.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, book)
 }
 
-func (h BookHandler) GetBooks(ctx *gin.Context) {
-	var books []models.Book
-
-	if result := h.DB.Find(&books); result.Error != nil {
-		ctx.AbortWithError(http.StatusNotFound, result.Error)
+func (c *BookController) GetBooks(ctx *gin.Context) {
+	books, err := c.repo.GetAllBooks()
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &books)
+	ctx.JSON(http.StatusOK, books)
 }
 
 type UpdateBookRequestBody struct {
@@ -87,19 +98,22 @@ type UpdateBookRequestBody struct {
 	Description string `json:"description"`
 }
 
-func (h BookHandler) UpdateBook(ctx *gin.Context) {
-	id := ctx.Param("id")
-	body := UpdateBookRequestBody{}
+func (c *BookController) UpdateBook(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
+	var body UpdateBookRequestBody
 	if err := ctx.BindJSON(&body); err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	var book models.Book
-
-	if result := h.DB.First(&book, id); result.Error != nil {
-		ctx.AbortWithError(http.StatusNotFound, result.Error)
+	book, err := c.repo.GetBookByID(uint(id))
+	if err != nil {
+		ctx.AbortWithError(http.StatusNotFound, err)
 		return
 	}
 
@@ -107,7 +121,10 @@ func (h BookHandler) UpdateBook(ctx *gin.Context) {
 	book.Author = body.Author
 	book.Description = body.Description
 
-	h.DB.Save(&book)
+	if err := c.repo.UpdateBook(book); err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
-	ctx.JSON(http.StatusOK, &book)
+	ctx.JSON(http.StatusOK, book)
 }

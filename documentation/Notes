@@ -27,7 +27,9 @@
 
 
 ---- V2 ---- 
+
 // .env should be outside the project_root
+
 project_root/
 ├── go.mod
 ├── go.sum

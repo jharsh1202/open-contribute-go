@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+
 	router "open-contribute/pkg/api/routers"
 	"open-contribute/pkg/db"
 
@@ -9,33 +13,43 @@ import (
 )
 
 func main() {
-	// SET ENVIRONMENT CONFIG FILE PATH
+	// Load environment variables from .env file
 	viper.SetConfigFile(".env")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Error reading config file: %v", err)
+	}
 
-	// READ ENVIRONMENT CONFIG FILE
-	viper.ReadInConfig()
+	// Fetch environment variables
+	port := viper.GetString("PORT")
+	dbPath := viper.GetString("DB_PATH")
 
-	// FETCH RELATED ENVIRONMENT VARIABLES
-	port := viper.Get("PORT").(string)
-	dbPath := viper.Get("DB_PATH").(string)
-
-	// creates a new Gin engine with the default middleware attached which includes Logger and Recovery middleware
-	// holds the instance of the Gin engine used to define routes and start the server.
+	// Create a new Gin engine with default middleware
 	gin_router := gin.Default()
 
 	// Initialize Database
-	dbHandler := db.Init(dbPath)
+	dbHandler, err := db.Init(dbPath)
+	if err != nil {
+		log.Fatalf("Error initializing database: %v", err)
+	}
+	// defer dbHandler.Close()
 
 	// Register Routes
 	router.RegisterRoutes(gin_router, dbHandler)
 
+	// Default route to display port and database path
 	gin_router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
-			"port": port,
-			// "dbUrl": dbUrl,
+			"port":   port,
 			"dbPath": dbPath,
 		})
 	})
 
-	gin_router.Run(port)
+	// Start the server
+	log.Printf("Starting server on port %s", port)
+	err = gin_router.Run(fmt.Sprintf(":%s", port))
+	if err != nil {
+		log.Fatalf("Error starting server: %v", err)
+		os.Exit(1)
+	}
 }
